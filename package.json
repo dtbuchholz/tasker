@@ -7,6 +7,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "mcp": "node dist/mcp/server.js",
+    "checkin": "node dist/scripts/checkin.js",
+    "checkin:weekly": "node dist/scripts/checkin.js --weekly",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",

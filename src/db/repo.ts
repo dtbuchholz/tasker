@@ -1,8 +1,17 @@
-import { and, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type { Db } from "./client.js";
-import type { Bucket, NewCheckin, NewTask, NewTaskEvent, Priority, Task } from "./schema.js";
-import { checkins, taskEvents, tasks } from "./schema.js";
+import type {
+  Bucket,
+  NewCheckin,
+  NewTask,
+  NewTaskEvent,
+  OutboxMessage,
+  OutboxMessageType,
+  Priority,
+  Task,
+} from "./schema.js";
+import { checkins, outbox, taskEvents, tasks } from "./schema.js";
 
 function mutationsAllowed(): boolean {
   return process.env["ALLOW_MUTATIONS"] !== "false";
@@ -283,4 +292,58 @@ export async function countTasks(db: Db): Promise<Record<Bucket, number>> {
   }
 
   return counts;
+}
+
+export async function getCompletedThisWeek(db: Db): Promise<Task[]> {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() + mondayOffset);
+  weekStart.setHours(0, 0, 0, 0);
+
+  return await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.bucket, "done"), gte(tasks.updatedAt, weekStart)))
+    .orderBy(desc(tasks.updatedAt))
+    .limit(20);
+}
+
+// Outbox functions
+
+export async function createOutboxMessage(
+  db: Db,
+  messageType: OutboxMessageType,
+  content: string
+): Promise<OutboxMessage> {
+  assertMutationsAllowed();
+
+  const [message] = await db.insert(outbox).values({ messageType, content }).returning();
+
+  if (!message) {
+    throw new Error("Failed to create outbox message");
+  }
+
+  return message;
+}
+
+export async function getPendingOutboxMessages(db: Db): Promise<OutboxMessage[]> {
+  return await db.select().from(outbox).where(isNull(outbox.deliveredAt)).orderBy(outbox.createdAt);
+}
+
+export async function markOutboxMessageDelivered(db: Db, id: string): Promise<OutboxMessage> {
+  assertMutationsAllowed();
+
+  const [updated] = await db
+    .update(outbox)
+    .set({ deliveredAt: new Date() })
+    .where(eq(outbox.id, id))
+    .returning();
+
+  if (!updated) {
+    throw new Error(`Outbox message not found: ${id}`);
+  }
+
+  return updated;
 }
