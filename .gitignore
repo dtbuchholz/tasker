@@ -21,8 +21,8 @@ Thumbs.db
 # Test coverage
 coverage/
 
-# Drizzle
-drizzle/meta/
+# Drizzle - meta folder should be tracked for proper migration generation
+# drizzle/meta/
 
 # Logs
 *.log

@@ -120,6 +120,57 @@ pnpm lint
 pnpm format
 ```
 
+### Database Migrations
+
+This project uses [Drizzle ORM](https://orm.drizzle.team/) for database management. The `drizzle/meta/` folder is tracked in git to maintain migration state.
+
+**Making schema changes:**
+
+1. Edit `src/db/schema.ts` with your changes
+2. Generate a migration:
+   ```bash
+   pnpm db:generate
+   ```
+3. Review the generated SQL in `drizzle/`
+4. Apply to database:
+   ```bash
+   pnpm db:migrate
+   ```
+5. Commit both the schema changes and generated migration files
+
+**Drizzle commands:**
+
+| Command            | Description                            |
+| ------------------ | -------------------------------------- |
+| `pnpm db:generate` | Generate migration from schema changes |
+| `pnpm db:migrate`  | Apply pending migrations to database   |
+| `pnpm db:studio`   | Open Drizzle Studio UI for browsing    |
+
+### Scheduled Check-ins
+
+The check-in system writes messages to an `outbox` table for external delivery (e.g., via Telegram).
+
+```bash
+# Daily check-in (writes to outbox)
+pnpm checkin
+
+# Weekly review (writes to outbox)
+pnpm checkin:weekly
+
+# Preview without writing to database
+pnpm checkin --dry-run
+```
+
+**Outbox consumption:** Clients poll for pending messages and mark them delivered:
+
+```sql
+-- Get pending messages
+SELECT * FROM outbox WHERE delivered_at IS NULL ORDER BY created_at;
+
+-- Mark as delivered after sending
+UPDATE outbox SET delivered_at = now() WHERE id = '...';
+```
+
 ## Configuration
 
 See `CLAUDE.md` for agent behavior rules and `AGENTS.md` for detailed task management semantics.

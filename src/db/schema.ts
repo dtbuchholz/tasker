@@ -43,11 +43,28 @@ export const checkins = pgTable("checkins", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const outboxMessageTypeEnum = pgEnum("outbox_message_type", [
+  "daily_checkin",
+  "weekly_review",
+  "reminder",
+]);
+
+export const outbox = pgTable("outbox", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  messageType: outboxMessageTypeEnum("message_type").notNull(),
+  content: text("content").notNull(),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type TaskEvent = typeof taskEvents.$inferSelect;
 export type NewTaskEvent = typeof taskEvents.$inferInsert;
 export type Checkin = typeof checkins.$inferSelect;
 export type NewCheckin = typeof checkins.$inferInsert;
+export type OutboxMessage = typeof outbox.$inferSelect;
+export type NewOutboxMessage = typeof outbox.$inferInsert;
+export type OutboxMessageType = (typeof outboxMessageTypeEnum.enumValues)[number];
 export type Bucket = (typeof bucketEnum.enumValues)[number];
 export type Priority = (typeof priorityEnum.enumValues)[number];
