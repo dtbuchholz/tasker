@@ -1,10 +1,19 @@
 CREATE TYPE "public"."bucket" AS ENUM('inbox', 'next', 'doing', 'done');--> statement-breakpoint
+CREATE TYPE "public"."outbox_message_type" AS ENUM('daily_checkin', 'weekly_review', 'reminder');--> statement-breakpoint
 CREATE TYPE "public"."priority" AS ENUM('p1', 'p2', 'p3');--> statement-breakpoint
 CREATE TYPE "public"."task_event_type" AS ENUM('created', 'updated', 'moved', 'completed', 'blocked', 'unblocked');--> statement-breakpoint
 CREATE TABLE "checkins" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"summary" text NOT NULL,
 	"doing_snapshot" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "outbox" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"message_type" "outbox_message_type" NOT NULL,
+	"content" text NOT NULL,
+	"delivered_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
